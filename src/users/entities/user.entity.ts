@@ -14,8 +14,8 @@ export class User {
     @Column()
     password: string;
 
-    @Column({nullable: true})
-    mfaSecret: string;
+    @Column({nullable: true, type: 'bytea'})
+    mfaSecret: Buffer;
 
     @Column({default: 1})
     role: number;

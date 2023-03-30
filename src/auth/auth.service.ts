@@ -5,6 +5,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
 import * as speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
+import { authConstants } from './constants';
 
 @Injectable()
 export class AuthService {
@@ -48,5 +49,20 @@ export class AuthService {
         const secret = speakeasy.generateSecret();
 
         return secret.base32;
+    }
+
+    verifyTOTPCode(code: string, secret: string): boolean {
+        return speakeasy.totp.verify({secret: secret, encoding: 'base32', token: code})
+    }
+
+    generateRecoveryCodes(): string[] {
+        let recoveryCodes: string[] = [];
+
+        for(let i = 0; i < authConstants.numRecoveryCodes; i++) {
+            let newRecoveryCode = Math.random().toString(16).substring(2, authConstants.recoveryCodeLength);
+            recoveryCodes.push(newRecoveryCode)
+        }
+
+        return recoveryCodes;
     }
 }

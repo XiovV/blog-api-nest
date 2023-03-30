@@ -26,9 +26,9 @@ export class UsersService {
       throw new HttpException('email already exists', HttpStatus.BAD_REQUEST);
     }
 
-    const result = await this.usersRepository.insert(user)
+    const result = await this.usersRepository.insert(user);
 
-    user.id = result.identifiers[0].id
+    user.id = result.identifiers[0].id;
     
     return user; 
   }
@@ -37,10 +37,11 @@ export class UsersService {
     return await this.usersRepository.findOneBy({username: username})
   }
 
-  async insertMfaSecret(userId: number, secret: string) {
-    const user = await this.usersRepository.findOneBy({id: userId})
+  async saveMfaDetails(user: User, secret: Buffer, recoveryCodes: string[]) {
+    user.recovery = recoveryCodes;
+    user.mfaSecret = ("\\x" + secret.toString("hex")) as any;
 
-    
+    this.usersRepository.save(user);
   }
 
   findAll() {

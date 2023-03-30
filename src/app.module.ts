@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { CryptoModule } from './crypto/crypto.module';
 
 @Module({
   imports: [UsersModule, ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
@@ -22,7 +23,7 @@ import { AuthModule } from './auth/auth.module';
     }),
     inject: [ConfigService]
 
-  }), AuthModule],
+  }), AuthModule, CryptoModule],
   controllers: [AppController],
   providers: [AppService],
 })

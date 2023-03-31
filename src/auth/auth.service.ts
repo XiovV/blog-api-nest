@@ -25,7 +25,11 @@ export class AuthService {
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
-        if (totp) {
+        if (!totp && user.mfaSecret) {
+            throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.UNAUTHORIZED);
+        }
+
+        if (totp && user.mfaSecret) {
             const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
             const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 

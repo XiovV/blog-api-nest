@@ -6,33 +6,36 @@ import { UsersService } from 'src/users/users.service';
 import * as speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { authConstants } from './constants';
+import { CryptoService } from 'src/crypto/crypto.service';
 
 @Injectable()
 export class AuthService {
-    constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService) { }
+    constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService) { }
 
-    async validateUser(username: string, pass: string): Promise<User> {
+    async login(username: string, password: string, totp?: string): Promise<any> {
         const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException });
 
         if (!user) {
-            throw new HttpException('username or password is invalid', HttpStatus.UNAUTHORIZED);
+            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
-        const isPasswordValid = await argon2.verify(user.password, pass)
+        const isPasswordValid = await argon2.verify(user.password, password)
 
         if (!isPasswordValid) {
-            throw new HttpException('username or password is invalid', HttpStatus.UNAUTHORIZED);
+            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
-        return user;
-    }
+        if (totp) {
+            const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
+            const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 
-    async login(user: User) {
-        if (user.mfaSecret) {
-            throw new HttpException('this user has 2FA enabled', HttpStatus.FOUND)
+            if (!isTOTPValid) {
+                throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
+            }
         }
 
-        return this.generateTokenPair(user)
+
+        return await this.generateTokenPair(user);
     }
 
     async generateTokenPair(user: User) {

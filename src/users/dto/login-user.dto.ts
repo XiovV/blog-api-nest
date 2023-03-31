@@ -1,4 +1,4 @@
-import { MinLength } from "class-validator"
+import { Length, MinLength } from "class-validator"
 
 export class LoginUserDto {
     @MinLength(5)
@@ -6,4 +6,6 @@ export class LoginUserDto {
 
     @MinLength(2)
     username: string
+
+    totp?: string
 }

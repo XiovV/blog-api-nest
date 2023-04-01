@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { ConfirmMfaDto } from './dto/confirm-mfa.dto';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { LoginUserDto } from './dto/login-user.dto';
+import { JwtGuard } from 'src/auth/auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -27,6 +28,7 @@ export class UsersController {
   }
 
   @Version('1')
+  @UseGuards(JwtGuard)
   @Get('mfa')
   async setupMfa() {
     const secret = this.authService.generateMfaSecret();
@@ -35,6 +37,7 @@ export class UsersController {
   }
 
   @Version('1')
+  @UseGuards(JwtGuard)
   @Post('mfa/confirm')
   async confirmMfa(@Body(new ValidationPipe()) confirmMfaDto: ConfirmMfaDto, @Request() req) {
     if (!this.authService.verifyTOTPCode(confirmMfaDto.totp, confirmMfaDto.secret)) {

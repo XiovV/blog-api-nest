@@ -33,7 +33,9 @@ export class UsersController {
   async loginRecovery(@Body(new ValidationPipe()) loginUserRecoveryDto: LoginUserRecoveryDto) {
     const user = await this.authService.validateLoginCredentials(loginUserRecoveryDto.username, loginUserRecoveryDto.password);
 
-    return await this.usersService.loginUserRecovery(user, loginUserRecoveryDto.recoveryCode);
+    await this.usersService.loginUserRecovery(user, loginUserRecoveryDto.recoveryCode);
+
+    return await this.authService.generateTokenPair(user);
   }
 
   @Version('1')

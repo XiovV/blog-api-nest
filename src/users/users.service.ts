@@ -42,7 +42,7 @@ export class UsersService {
 
     user.recovery = user.recovery.filter(code => code !== recoveryCode);
 
-    this.usersRepository.save(user);
+    await this.usersRepository.save(user);
   }
 
   async findOneByUsername(username: string): Promise<User | undefined> {

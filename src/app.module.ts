@@ -7,6 +7,7 @@ import { User } from './users/entities/user.entity';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CryptoModule } from './crypto/crypto.module';
+import { BlacklistedToken } from './users/entities/token-blacklist.entity';
 
 @Module({
   imports: [UsersModule, ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
@@ -18,7 +19,7 @@ import { CryptoModule } from './crypto/crypto.module';
       username: configService.get('DATABASE_USERNAME'),
       password: configService.get('DATABASE_PASSWORD'),
       database: configService.get('DATABASE'),
-      entities: [User],
+      entities: [User, BlacklistedToken],
       synchronize: true,
     }),
     inject: [ConfigService]

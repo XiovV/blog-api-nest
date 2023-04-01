@@ -33,6 +33,18 @@ export class UsersService {
     return user; 
   }
 
+  async loginUserRecovery(user: User, recoveryCode: string) {
+    const isRecoveryCodeValid = user.recovery.includes(recoveryCode);
+
+    if (!isRecoveryCodeValid) {
+      throw new HttpException('recovery code is incorrect', HttpStatus.UNAUTHORIZED);
+    }
+
+    user.recovery = user.recovery.filter(code => code !== recoveryCode);
+
+    this.usersRepository.save(user);
+  }
+
   async findOneByUsername(username: string): Promise<User | undefined> {
     return await this.usersRepository.findOneBy({username: username})
   }

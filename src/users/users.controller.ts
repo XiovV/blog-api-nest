@@ -7,8 +7,10 @@ import { User } from './entities/user.entity';
 import { ConfirmMfaDto } from './dto/confirm-mfa.dto';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { LoginUserDto } from './dto/login-user.dto';
-import { JwtGuard } from 'src/auth/auth.guard';
+import { JwtGuard } from 'src/auth/jwt.guard';
 import { LoginUserRecoveryDto } from './dto/login-user-recovery.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { BlacklistedToken } from './entities/token-blacklist.entity';
 
 @Controller('users')
 export class UsersController {
@@ -62,6 +64,31 @@ export class UsersController {
 
     await this.usersService.saveMfaDetails(user, encryptedSecret, recoveryCodes);
     return recoveryCodes;
-  } 
+  }
 
+  @Version('1')
+  @UseGuards(JwtGuard)
+  @Post('token/refresh')
+  async refreshToken(@Body(new ValidationPipe()) refreshTokenDto: RefreshTokenDto, @Request() req) {
+    const user: User = req.user;
+
+    try {
+      await this.authService.validateRefreshToken(refreshTokenDto.refreshToken, user.id);
+    } catch (error) {
+      throw error;
+    }
+
+    const isTokenBlacklisted = await this.usersService.isTokenBlacklisted(refreshTokenDto.refreshToken)
+
+    if (isTokenBlacklisted) {
+      this.usersService.setActiveStatus(user, false);
+
+      throw new UnauthorizedException();
+    }
+
+    await this.usersService.insertBlacklistedToken(user, refreshTokenDto.refreshToken);
+
+
+    return await this.authService.generateTokenPair(user);
+  }
 }

@@ -8,6 +8,7 @@ import { ConfirmMfaDto } from './dto/confirm-mfa.dto';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtGuard } from 'src/auth/auth.guard';
+import { LoginUserRecoveryDto } from './dto/login-user-recovery.dto';
 
 @Controller('users')
 export class UsersController {
@@ -25,6 +26,14 @@ export class UsersController {
   @Post('login')
   async login(@Body(new ValidationPipe()) loginUserDto: LoginUserDto) {
     return this.authService.login(loginUserDto.username, loginUserDto.password, loginUserDto.totp);
+  }
+
+  @Version('1')
+  @Post('login/recovery')
+  async loginRecovery(@Body(new ValidationPipe()) loginUserRecoveryDto: LoginUserRecoveryDto) {
+    const user = await this.authService.validateLoginCredentials(loginUserRecoveryDto.username, loginUserRecoveryDto.password);
+
+    return await this.usersService.loginUserRecovery(user, loginUserRecoveryDto.recoveryCode);
   }
 
   @Version('1')
@@ -48,9 +57,9 @@ export class UsersController {
     const encryptedSecret = await this.cryptoService.encryptMfaSecret(confirmMfaDto.secret);
 
     const user: User = req.user;
+
     await this.usersService.saveMfaDetails(user, encryptedSecret, recoveryCodes);
     return recoveryCodes;
   } 
 
-  
 }

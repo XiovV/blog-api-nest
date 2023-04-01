@@ -13,17 +13,7 @@ export class AuthService {
     constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService) { }
 
     async login(username: string, password: string, totp?: string): Promise<any> {
-        const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException });
-
-        if (!user) {
-            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
-        }
-
-        const isPasswordValid = await argon2.verify(user.password, password)
-
-        if (!isPasswordValid) {
-            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
-        }
+        const user = await this.validateLoginCredentials(username, password);
 
         if (!totp && user.mfaSecret) {
             throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.UNAUTHORIZED);
@@ -38,8 +28,23 @@ export class AuthService {
             }
         }
 
-
         return await this.generateTokenPair(user);
+    }
+
+    async validateLoginCredentials(username: string, password: string): Promise<User> {
+        const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException });
+
+        if (!user) {
+            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
+        }
+
+        const isPasswordValid = await argon2.verify(user.password, password)
+
+        if (!isPasswordValid) {
+            throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
+        }
+
+        return user;
     }
 
     async generateTokenPair(user: User) {
@@ -47,8 +52,8 @@ export class AuthService {
         const refreshTokenClaims = { sub: user.id, type: "REFRESH" }
 
         return {
-            access_token: this.jwtService.sign(accessTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '15min' }),
-            refresh_token: this.jwtService.sign(refreshTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '2y' })
+            access_token: await this.jwtService.signAsync(accessTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '15min' }),
+            refresh_token: await this.jwtService.signAsync(refreshTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '2y' })
         }
     }
 

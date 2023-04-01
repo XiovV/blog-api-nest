@@ -5,10 +5,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import * as argon2 from 'argon2';
+import { BlacklistedToken } from './entities/token-blacklist.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private usersRepository: Repository<User>) { }
+  constructor(@InjectRepository(User) private usersRepository: Repository<User>, @InjectRepository(BlacklistedToken) private blacklistedToken: Repository<BlacklistedToken>) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = new User();
@@ -41,6 +42,29 @@ export class UsersService {
     }
 
     user.recovery = user.recovery.filter(code => code !== recoveryCode);
+
+    await this.usersRepository.save(user);
+  }
+
+  async insertBlacklistedToken(user: User, refreshToken: string) {
+    const token = new BlacklistedToken();
+    token.token = refreshToken;
+    token.user = user;
+
+    await this.blacklistedToken.save(token)
+  }
+
+  async isTokenBlacklisted(refreshToken: string): Promise<boolean> {
+    const foundToken = await this.blacklistedToken.findOneBy({token: refreshToken})
+    if (!foundToken) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  async setActiveStatus(user: User, isActive: boolean) {
+    user.isActive = isActive;
 
     await this.usersRepository.save(user);
   }

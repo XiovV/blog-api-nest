@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { User } from 'src/users/entities/user.entity';
@@ -7,6 +7,7 @@ import * as speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { authConstants } from './constants';
 import { CryptoService } from 'src/crypto/crypto.service';
+import { BlacklistedToken } from 'src/users/entities/token-blacklist.entity';
 
 @Injectable()
 export class AuthService {
@@ -57,6 +58,19 @@ export class AuthService {
         }
     }
 
+    async validateRefreshToken(refreshToken: string, userId: number) {
+        try {
+            const payload = await this.jwtService.verifyAsync(refreshToken, { secret: this.config.get('JWT_SECRET') });
+
+            if (payload.sub !== userId) {
+                throw new UnauthorizedException();
+            }
+        } catch {
+            throw new UnauthorizedException();
+        }
+
+    }
+
     generateMfaSecret(): string {
         const secret = speakeasy.generateSecret();
 
@@ -64,13 +78,13 @@ export class AuthService {
     }
 
     verifyTOTPCode(code: string, secret: string): boolean {
-        return speakeasy.totp.verify({secret: secret, encoding: 'base32', token: code})
+        return speakeasy.totp.verify({ secret: secret, encoding: 'base32', token: code })
     }
 
     generateRecoveryCodes(): string[] {
         let recoveryCodes: string[] = [];
 
-        for(let i = 0; i < authConstants.numRecoveryCodes; i++) {
+        for (let i = 0; i < authConstants.numRecoveryCodes; i++) {
             let newRecoveryCode = Math.random().toString(16).substring(2, authConstants.recoveryCodeLength + 2);
             recoveryCodes.push(newRecoveryCode)
         }

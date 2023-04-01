@@ -71,7 +71,7 @@ export class AuthService {
         let recoveryCodes: string[] = [];
 
         for(let i = 0; i < authConstants.numRecoveryCodes; i++) {
-            let newRecoveryCode = Math.random().toString(16).substring(2, authConstants.recoveryCodeLength);
+            let newRecoveryCode = Math.random().toString(16).substring(2, authConstants.recoveryCodeLength + 2);
             recoveryCodes.push(newRecoveryCode)
         }
 

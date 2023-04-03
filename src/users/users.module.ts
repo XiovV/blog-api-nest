@@ -7,11 +7,12 @@ import { AuthService } from 'src/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { BlacklistedToken } from './entities/token-blacklist.entity';
+import { MailerService } from 'src/mailer/mailer.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, BlacklistedToken])],
   controllers: [UsersController],
-  providers: [UsersService, AuthService, JwtService, CryptoService],
+  providers: [UsersService, AuthService, JwtService, CryptoService, MailerService],
   exports: [UsersService],
 })
 export class UsersModule {}

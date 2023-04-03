@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode } from '@nestjs/common';
+import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthService } from 'src/auth/auth.service';
 import { User } from './entities/user.entity';
 import { ConfirmMfaDto } from './dto/confirm-mfa.dto';
@@ -10,11 +9,12 @@ import { LoginUserDto } from './dto/login-user.dto';
 import { JwtGuard } from 'src/auth/jwt.guard';
 import { LoginUserRecoveryDto } from './dto/login-user-recovery.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { BlacklistedToken } from './entities/token-blacklist.entity';
+import { MailerService } from 'src/mailer/mailer.service';
+import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService) { }
+  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService) { }
 
   @Version('1')
   @Post('register')
@@ -88,7 +88,25 @@ export class UsersController {
 
     await this.usersService.insertBlacklistedToken(user, refreshTokenDto.refreshToken);
 
-
     return await this.authService.generateTokenPair(user);
+  }
+
+  @Version('1')
+  @Post('password-reset')
+  async sendPasswordResetMail(@Body(new ValidationPipe()) passwordResetEmailDto: PasswordResetEmailDto) {
+    const user = await this.usersService.findOneByEmail(passwordResetEmailDto.email)
+    if (!user) {
+      throw new HttpException('a user with this email does not exist', HttpStatus.NOT_FOUND);
+    }
+
+    const passwordResetToken = this.usersService.generatePasswordResetToken();
+
+    this.mailerService.sendPasswordResetMail(user.email, user.username, passwordResetToken);
+  }
+
+  @Version('1')
+  @Put('password-reset')
+  async resetUserPassword(@Query() query) {
+    console.log(query.token);
   }
 }

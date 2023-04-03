@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { CryptoModule } from './crypto/crypto.module';
 import { BlacklistedToken } from './users/entities/token-blacklist.entity';
+import { MailerModule } from './mailer/mailer.module';
+import { PasswordResetToken } from './users/entities/password-reset-token.entity';
 
 @Module({
   imports: [UsersModule, ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
@@ -19,12 +21,12 @@ import { BlacklistedToken } from './users/entities/token-blacklist.entity';
       username: configService.get('DATABASE_USERNAME'),
       password: configService.get('DATABASE_PASSWORD'),
       database: configService.get('DATABASE'),
-      entities: [User, BlacklistedToken],
+      entities: [User, BlacklistedToken, PasswordResetToken],
       synchronize: true,
     }),
     inject: [ConfigService]
 
-  }), AuthModule, CryptoModule],
+  }), AuthModule, CryptoModule, MailerModule],
   controllers: [AppController],
   providers: [AppService],
 })

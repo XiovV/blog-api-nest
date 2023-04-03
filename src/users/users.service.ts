@@ -63,6 +63,10 @@ export class UsersService {
     return true;
   }
 
+  generatePasswordResetToken(): string {
+    return Math.random().toString(32).substring(2, 14);
+  }
+
   async setActiveStatus(user: User, isActive: boolean) {
     user.isActive = isActive;
 
@@ -70,7 +74,11 @@ export class UsersService {
   }
 
   async findOneByUsername(username: string): Promise<User | undefined> {
-    return await this.usersRepository.findOneBy({username: username})
+    return await this.usersRepository.findOneBy({username})
+  }
+
+  async findOneByEmail(email: string): Promise<User | undefined> {
+    return await this.usersRepository.findOneBy({email})
   }
 
   async saveMfaDetails(user: User, secret: Buffer, recoveryCodes: string[]) {

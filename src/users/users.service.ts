@@ -6,10 +6,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import * as argon2 from 'argon2';
 import { BlacklistedToken } from './entities/token-blacklist.entity';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private usersRepository: Repository<User>, @InjectRepository(BlacklistedToken) private blacklistedToken: Repository<BlacklistedToken>) { }
+  constructor(@InjectRepository(User) private usersRepository: Repository<User>, @InjectRepository(BlacklistedToken) private blacklistedTokenRepository: Repository<BlacklistedToken>, @InjectRepository(PasswordResetToken) private passwordResetTokenRepository: Repository<PasswordResetToken>) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = new User();
@@ -51,11 +52,11 @@ export class UsersService {
     token.token = refreshToken;
     token.user = user;
 
-    await this.blacklistedToken.save(token)
+    await this.blacklistedTokenRepository.save(token)
   }
 
   async isTokenBlacklisted(refreshToken: string): Promise<boolean> {
-    const foundToken = await this.blacklistedToken.findOneBy({token: refreshToken})
+    const foundToken = await this.blacklistedTokenRepository.findOneBy({token: refreshToken})
     if (!foundToken) {
       return false;
     }
@@ -71,6 +72,19 @@ export class UsersService {
     user.isActive = isActive;
 
     await this.usersRepository.save(user);
+  }
+
+  async insertPasswordResetToken(user: User, passwordResetToken: string) {
+    const resetToken = new PasswordResetToken();
+    resetToken.token = passwordResetToken;
+    resetToken.user = user;
+
+    const currentTime = new Date();
+    currentTime.setMinutes(currentTime.getMinutes() + 20)
+
+    resetToken.expiry = currentTime.getTime(); 
+
+    await this.passwordResetTokenRepository.save(resetToken);
   }
 
   async findOneByUsername(username: string): Promise<User | undefined> {

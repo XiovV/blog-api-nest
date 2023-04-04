@@ -22,7 +22,7 @@ export class MailerService {
             from: 'no-reply@blogapi.com',
             to: receiverEmail,
             subject: 'Password Reset Instructions For BlogAPI Account',
-            text: `Hello ${username}! Here is your password reset token: ${token}`
+            text: `Hello ${username}! Here is your password reset URL: http://localhost:3000/v1/users/password-reset?token=${token}. This URL will expire in 20 minutes.`
         })
     }
 }

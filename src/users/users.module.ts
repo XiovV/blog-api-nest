@@ -8,9 +8,10 @@ import { JwtService } from '@nestjs/jwt';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { BlacklistedToken } from './entities/token-blacklist.entity';
 import { MailerService } from 'src/mailer/mailer.service';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, BlacklistedToken])],
+  imports: [TypeOrmModule.forFeature([User, BlacklistedToken, PasswordResetToken])],
   controllers: [UsersController],
   providers: [UsersService, AuthService, JwtService, CryptoService, MailerService],
   exports: [UsersService],

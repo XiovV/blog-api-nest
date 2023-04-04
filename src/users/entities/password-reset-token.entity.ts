@@ -9,10 +9,9 @@ export class PasswordResetToken {
     @Column({unique: true})
     token: string
 
-    @Column()
+    @Column({type: 'bigint'})
     expiry: number
 
-    @OneToOne(() => User)
-    @JoinColumn()
+    @ManyToOne(() => User, user => user.passwordResetTokens)
     user: User
 }

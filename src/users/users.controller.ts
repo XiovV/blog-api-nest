@@ -11,6 +11,7 @@ import { LoginUserRecoveryDto } from './dto/login-user-recovery.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
+import { error } from 'console';
 
 @Controller('users')
 export class UsersController {
@@ -100,6 +101,8 @@ export class UsersController {
     }
 
     const passwordResetToken = this.usersService.generatePasswordResetToken();
+
+    await this.usersService.insertPasswordResetToken(user, passwordResetToken)
 
     this.mailerService.sendPasswordResetMail(user.email, user.username, passwordResetToken);
   }

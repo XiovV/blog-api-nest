@@ -1,9 +1,11 @@
 import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { BlacklistedToken } from "./token-blacklist.entity";
 import { PasswordResetToken } from "./password-reset-token.entity";
+import { Post } from "src/posts/entities/post.entity";
 
 @Entity()
 export class User {
+    [x: string]: any;
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -33,4 +35,7 @@ export class User {
 
     @OneToMany(() => PasswordResetToken, token => token.user)
     passwordResetTokens: PasswordResetToken[]
+
+    @OneToMany(() => Post, post => post.user)
+    posts: Post[]
 }

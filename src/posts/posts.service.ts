@@ -16,7 +16,6 @@ export class PostsService {
     post.title = createPostDto.title;
     post.user = user;
 
-
     await this.postsRepository.save(post)
   }
 
@@ -24,8 +23,8 @@ export class PostsService {
     return `This action returns all posts`;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} post`;
+  async findOne(id: number) {
+    return await this.postsRepository.findOneBy({id})
   }
 
   update(id: number, updatePostDto: UpdatePostDto) {

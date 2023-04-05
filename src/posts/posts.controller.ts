@@ -23,9 +23,11 @@ export class PostsController {
     return this.postsService.findAll();
   }
 
+  @Version('1')
+  @UseGuards(JwtGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.postsService.findOne(+id);
+  findOne(@Param('id') id: number) {
+    return this.postsService.findOne(id);
   }
 
   @Patch(':id')

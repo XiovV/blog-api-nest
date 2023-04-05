@@ -18,8 +18,10 @@ export class JwtGuard implements CanActivate {
 
         const verifyTokenOptions: JwtVerifyOptions = {
             secret: this.config.get('JWT_SECRET'),
-            ignoreExpiration: request.url === '/v1/users/token/refresh' ? false : true
+            ignoreExpiration: request.url === '/v1/users/token/refresh' ? true : false
         }
+
+        console.log(verifyTokenOptions);
 
         try {
             const payload = await this.jwtService.verifyAsync(token, verifyTokenOptions);

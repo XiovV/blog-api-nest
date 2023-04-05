@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -27,8 +27,17 @@ export class PostsService {
     return await this.postsRepository.findOneBy({id})
   }
 
-  update(id: number, updatePostDto: UpdatePostDto) {
-    return `This action updates a #${id} post`;
+  async update(user: User, id: number, updatePostDto: UpdatePostDto) {
+    const result = await this.postsRepository.find({where: {id}, relations: {user: true}})
+    const post: Post = result[0]
+
+    if (user.id !== post.user.id) {
+      throw new UnauthorizedException()
+    }
+
+    post.body = updatePostDto.body;
+    post.title = updatePostDto.title;
+    await this.postsRepository.save(post);
   }
 
   remove(id: number) {

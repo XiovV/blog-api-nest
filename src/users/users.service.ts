@@ -74,6 +74,26 @@ export class UsersService {
     await this.usersRepository.save(user);
   }
 
+  private async updateUserPassword(user: User, password: string) {
+    console.log(user)
+
+    user.password = await argon2.hash(password);
+
+    await this.usersRepository.save(user);
+  }
+
+  async resetUserPasswordByResetToken(password: string, token: string) {
+    const resetToken = await this.passwordResetTokenRepository.findOneBy({})
+
+    const currentTime = Date.now()
+    if (resetToken.expiry < currentTime) {
+      throw new HttpException('this token has expired, please request a new one', HttpStatus.GONE);
+    }
+
+    const user = await resetToken.user;
+    await this.updateUserPassword(user, password)
+  }
+
   async insertPasswordResetToken(user: User, passwordResetToken: string) {
     const resetToken = new PasswordResetToken();
     resetToken.token = passwordResetToken;

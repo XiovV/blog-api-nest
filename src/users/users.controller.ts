@@ -11,8 +11,6 @@ import { LoginUserRecoveryDto } from './dto/login-user-recovery.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
-import { error } from 'console';
-import { ModuleTokenFactory } from '@nestjs/core/injector/module-token-factory';
 import { PasswordResetDto } from './dto/password-reset.dto';
 
 @Controller('users')

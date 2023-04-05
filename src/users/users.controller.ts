@@ -12,6 +12,8 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
 import { error } from 'console';
+import { ModuleTokenFactory } from '@nestjs/core/injector/module-token-factory';
+import { PasswordResetDto } from './dto/password-reset.dto';
 
 @Controller('users')
 export class UsersController {
@@ -109,7 +111,12 @@ export class UsersController {
 
   @Version('1')
   @Put('password-reset')
-  async resetUserPassword(@Query() query) {
-    console.log(query.token);
+  async resetUserPassword(@Body(new ValidationPipe()) passwordResetDto: PasswordResetDto, @Query() query) {
+    const { token } = query;
+    if (!token) {
+      throw new HttpException('please provide a password reset token', HttpStatus.BAD_REQUEST);
+    }
+
+    await this.usersService.resetUserPasswordByResetToken(passwordResetDto.password, token);
   }
 }

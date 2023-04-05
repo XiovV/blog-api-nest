@@ -10,6 +10,8 @@ import { CryptoModule } from './crypto/crypto.module';
 import { BlacklistedToken } from './users/entities/token-blacklist.entity';
 import { MailerModule } from './mailer/mailer.module';
 import { PasswordResetToken } from './users/entities/password-reset-token.entity';
+import { PostsModule } from './posts/posts.module';
+import { Post } from './posts/entities/post.entity';
 
 @Module({
   imports: [UsersModule, ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
@@ -21,12 +23,12 @@ import { PasswordResetToken } from './users/entities/password-reset-token.entity
       username: configService.get('DATABASE_USERNAME'),
       password: configService.get('DATABASE_PASSWORD'),
       database: configService.get('DATABASE'),
-      entities: [User, BlacklistedToken, PasswordResetToken],
+      entities: [User, BlacklistedToken, PasswordResetToken, Post],
       synchronize: true,
     }),
     inject: [ConfigService]
 
-  }), AuthModule, CryptoModule, MailerModule],
+  }), AuthModule, CryptoModule, MailerModule, PostsModule],
   controllers: [AppController],
   providers: [AppService],
 })

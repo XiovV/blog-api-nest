@@ -14,7 +14,7 @@ import { PostsModule } from './posts/posts.module';
 import { Post } from './posts/entities/post.entity';
 
 @Module({
-  imports: [UsersModule, ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
+  imports: [ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
     imports: [ConfigModule],
     useFactory: (configService: ConfigService) => ({
       type: 'postgres',
@@ -28,7 +28,7 @@ import { Post } from './posts/entities/post.entity';
     }),
     inject: [ConfigService]
 
-  }), AuthModule, CryptoModule, MailerModule, PostsModule],
+  }), UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],
   controllers: [AppController],
   providers: [AppService],
 })

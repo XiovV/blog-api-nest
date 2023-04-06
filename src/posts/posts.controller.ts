@@ -26,16 +26,23 @@ export class PostsController {
   @Version('1')
   @UseGuards(JwtGuard)
   @Get(':id')
-  findOne(@Param('id') id: number) {
-    return this.postsService.findOne(id);
+  async findOne(@Param('id') id: number) {
+    return await this.postsService.findOne(id);
+  }
+
+  @Version('1')
+  @UseGuards(JwtGuard)
+  @Get('user/:username')
+  async getUsersPosts(@Param('username') username: string) {
+    return await this.postsService.getUsersPosts(username)
   }
 
   @Version('1')
   @UseGuards(JwtGuard)
   @Patch(':id')
-  update(@Param('id') id: number, @Body() updatePostDto: UpdatePostDto, @Request() req) {
+  async update(@Param('id') id: number, @Body() updatePostDto: UpdatePostDto, @Request() req) {
     const user: User = req.user;
-    return this.postsService.update(user, id, updatePostDto);
+    return await this.postsService.update(user, id, updatePostDto);
   }
 
   @Delete(':id')

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtGuard } from 'src/auth/jwt.guard';
 import { User } from 'src/users/entities/user.entity';
+import { Post as PostEntity } from './entities/post.entity';
 
 @Controller('posts')
 export class PostsController {
@@ -16,11 +17,6 @@ export class PostsController {
     const user: User = req.user;
 
     return this.postsService.create(user, createPostDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.postsService.findAll();
   }
 
   @Version('1')
@@ -45,8 +41,17 @@ export class PostsController {
     return await this.postsService.update(user, id, updatePostDto);
   }
 
+  @Version('1')
+  @UseGuards(JwtGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.postsService.remove(+id);
+  async remove(@Param('id') id: number, @Request() req) {
+    const user: User = req.user;
+
+    const post: PostEntity = await this.postsService.findOne(id);
+    if (post.user.id !== user.id) {
+      throw new UnauthorizedException();
+    }    
+
+    return await this.postsService.remove(user, id);
   }
 }

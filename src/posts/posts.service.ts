@@ -1,11 +1,10 @@
-import { HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { User } from 'src/users/entities/user.entity';
-import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class PostsService {
@@ -20,12 +19,9 @@ export class PostsService {
     await this.postsRepository.save(post)
   }
 
-  findAll() {
-    return `This action returns all posts`;
-  }
-
   async findOne(id: number) {
-    return await this.postsRepository.findOneBy({id})
+    const post: Post[] =  await this.postsRepository.find({where: {id}, relations: {user: true}})
+    return post[0];
   }
 
   async getUsersPosts(username: string) {
@@ -34,6 +30,10 @@ export class PostsService {
     return await this.postsRepository.createQueryBuilder('post')
     .where('post.userId = :userId', { userId: user.id })
     .getMany();
+  }
+
+  async remove(user: User, id: number) {
+    await this.postsRepository.delete({id})
   }
 
   async update(user: User, id: number, updatePostDto: UpdatePostDto) {
@@ -48,9 +48,5 @@ export class PostsService {
     post.title = updatePostDto.title;
 
     await this.postsRepository.save(post);
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} post`;
   }
 }

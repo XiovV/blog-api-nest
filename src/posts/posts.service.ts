@@ -5,10 +5,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { User } from 'src/users/entities/user.entity';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class PostsService {
-  constructor(@InjectRepository(Post) private postsRepository: Repository<Post>) {}
+  constructor(@InjectRepository(Post) private postsRepository: Repository<Post>, @InjectRepository(User) private usersRepository: Repository<User>) {}
 
   async create(user: User, createPostDto: CreatePostDto) {
     const post = new Post();
@@ -27,6 +28,14 @@ export class PostsService {
     return await this.postsRepository.findOneBy({id})
   }
 
+  async getUsersPosts(username: string) {
+    const user: User = await this.usersRepository.findOneBy({username})
+
+    return await this.postsRepository.createQueryBuilder('post')
+    .where('post.userId = :userId', { userId: user.id })
+    .getMany();
+  }
+
   async update(user: User, id: number, updatePostDto: UpdatePostDto) {
     const result = await this.postsRepository.find({where: {id}, relations: {user: true}})
     const post: Post = result[0]
@@ -37,6 +46,7 @@ export class PostsService {
 
     post.body = updatePostDto.body;
     post.title = updatePostDto.title;
+
     await this.postsRepository.save(post);
   }
 

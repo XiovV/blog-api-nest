@@ -27,7 +27,5 @@ import { Post } from './posts/entities/post.entity';
     inject: [ConfigService]
 
   }), UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],
-  controllers: [],
-  providers: [],
 })
 export class AppModule {}

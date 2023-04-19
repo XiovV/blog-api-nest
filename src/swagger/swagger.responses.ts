@@ -25,6 +25,11 @@ export class NotFoundError extends ErrorResponse {
     statusCode: number
 }
 
+export class DefaultNotFoundError extends NotFoundError {
+    @ApiProperty({default: "Not Found"})
+    message: string;
+}
+
 export class ForbiddenError extends ErrorResponse {
     @ApiProperty({default: HttpStatus.FORBIDDEN})
     statusCode: number
@@ -40,13 +45,14 @@ export class UnauthorizedError extends ErrorResponse {
     statusCode: number
 }
 
-export class DefaultUnauthorizedError {
+export class DefaultUnauthorizedError extends UnauthorizedError {
     @ApiProperty({default: "Unauthorized"})
-    messages: string
+    message: string
+}
 
-    @ApiProperty({default: HttpStatus.UNAUTHORIZED})
-    statusCode: number
-
+export class InsufficientPermissionsError extends ForbiddenError {
+    @ApiProperty({default: "Insufficient Permissions"})
+    message: string
 }
 
 export class SetupMFAResponse {

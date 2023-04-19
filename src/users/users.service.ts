@@ -20,12 +20,12 @@ export class UsersService {
 
     const existingUsername = await this.usersRepository.findOneBy({username: createUserDto.username});
     if (existingUsername) {
-      throw new HttpException('username already exists', HttpStatus.BAD_REQUEST);
+      throw new HttpException('username already exists', HttpStatus.CONFLICT);
     }
 
     const existingEmail = await this.usersRepository.findOneBy({email: createUserDto.email})
     if (existingEmail) {
-      throw new HttpException('email already exists', HttpStatus.BAD_REQUEST);
+      throw new HttpException('email already exists', HttpStatus.CONFLICT);
     }
 
     const result = await this.usersRepository.insert(user);

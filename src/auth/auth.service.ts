@@ -7,7 +7,6 @@ import * as speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { authConstants } from './constants';
 import { CryptoService } from 'src/crypto/crypto.service';
-import { BlacklistedToken } from 'src/users/entities/token-blacklist.entity';
 
 @Injectable()
 export class AuthService {
@@ -17,7 +16,7 @@ export class AuthService {
         const user = await this.validateLoginCredentials(username, password);
 
         if (!totp && user.mfaSecret) {
-            throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.UNAUTHORIZED);
+            throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.FORBIDDEN);
         }
 
         if (totp && user.mfaSecret) {
@@ -53,8 +52,8 @@ export class AuthService {
         const refreshTokenClaims = { sub: user.id, type: "REFRESH" }
 
         return {
-            access_token: await this.jwtService.signAsync(accessTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '15min' }),
-            refresh_token: await this.jwtService.signAsync(refreshTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '2y' })
+            accessToken: await this.jwtService.signAsync(accessTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '15min' }),
+            refreshToken: await this.jwtService.signAsync(refreshTokenClaims, { secret: this.config.get('JWT_SECRET'), expiresIn: '2y' })
         }
     }
 

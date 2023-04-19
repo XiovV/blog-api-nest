@@ -5,18 +5,26 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { User } from 'src/users/entities/user.entity';
+import { BasePost } from './entities/base-post.entity';
 
 @Injectable()
 export class PostsService {
   constructor(@InjectRepository(Post) private postsRepository: Repository<Post>, @InjectRepository(User) private usersRepository: Repository<User>) {}
 
-  async create(user: User, createPostDto: CreatePostDto) {
+  async create(user: User, createPostDto: CreatePostDto): Promise<BasePost> {
     const post = new Post();
     post.body = createPostDto.body;
     post.title = createPostDto.title;
     post.user = user;
 
-    await this.postsRepository.save(post)
+    const createdPost =  await this.postsRepository.save(post)
+
+    const basePost = new BasePost()
+    basePost.id = createdPost.id
+    basePost.title = createdPost.title
+    basePost.body = createdPost.body
+
+    return basePost
   }
 
   async findOne(id: number) {

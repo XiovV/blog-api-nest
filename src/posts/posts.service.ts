@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -49,7 +49,7 @@ export class PostsService {
     const post: Post = result[0]
 
     if (user.id !== post.user.id) {
-      throw new UnauthorizedException()
+      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
     }
 
     post.body = updatePostDto.body;

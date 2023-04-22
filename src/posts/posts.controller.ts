@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -11,6 +11,7 @@ import { DefaultNotFoundError, DefaultUnauthorizedError, InsufficientPermissions
 import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
+import { throwError } from 'rxjs';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -95,7 +96,7 @@ export class PostsController {
 
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.Post, RBACAction.Delete)
     if (post.user.id !== user.id && !canDelete) {
-      throw new UnauthorizedException();
+      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
     }
 
     return await this.postsService.remove(user, id);

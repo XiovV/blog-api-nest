@@ -1,11 +1,11 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { BlacklistedToken } from "./token-blacklist.entity";
 import { PasswordResetToken } from "./password-reset-token.entity";
 import { Post } from "src/posts/entities/post.entity";
+import { Role } from "./role.entity";
 
 @Entity()
 export class User {
-    [x: string]: any;
     @PrimaryGeneratedColumn()
     id: number;
 
@@ -21,9 +21,6 @@ export class User {
     @Column({nullable: true, type: 'bytea'})
     mfaSecret: Buffer;
 
-    @Column({default: 1})
-    role: number;
-
     @Column('text', {array: true, nullable: true})
     recovery: string[];
 
@@ -38,4 +35,7 @@ export class User {
 
     @OneToMany(() => Post, post => post.user)
     posts: Post[]
+
+    @ManyToOne(() => Role, role => role.users)
+    role: Role
 }

@@ -8,15 +8,16 @@ import { Post as PostEntity } from './entities/post.entity';
 import { ApiBearerAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { BasePost } from './entities/base-post.entity';
 import { DefaultNotFoundError, DefaultUnauthorizedError, InsufficientPermissionsError, NotFoundError } from 'src/swagger/swagger.responses';
+import { Casbin } from 'src/casbin/casbin';
 
 @ApiTags('posts')
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private readonly postsService: PostsService, private casbin: Casbin) { }
 
-  @ApiOperation({summary: "Creates a new post."})
-  @ApiCreatedResponse({description: "Post has been created successfully", type: BasePost})
-  @ApiUnauthorizedResponse({description: "The access token is invalid", type: DefaultUnauthorizedError})
+  @ApiOperation({ summary: "Creates a new post." })
+  @ApiCreatedResponse({ description: "Post has been created successfully", type: BasePost })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @UseGuards(JwtGuard)
@@ -27,10 +28,10 @@ export class PostsController {
     return this.postsService.create(user, createPostDto);
   }
 
-  @ApiOperation({summary: "Gets a post by ID."})
-  @ApiOkResponse({type: BasePost})
-  @ApiNotFoundResponse({type: DefaultNotFoundError})
-  @ApiUnauthorizedResponse({description: "The access token is invalid", type: DefaultUnauthorizedError})
+  @ApiOperation({ summary: "Gets a post by ID." })
+  @ApiOkResponse({ type: BasePost })
+  @ApiNotFoundResponse({ type: DefaultNotFoundError })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @UseGuards(JwtGuard)
@@ -49,10 +50,10 @@ export class PostsController {
     return basePost;
   }
 
-  @ApiOperation({summary: "Gets a list of user's posts."})
-  @ApiOkResponse({type: BasePost})
-  @ApiNotFoundResponse({type: DefaultNotFoundError})
-  @ApiUnauthorizedResponse({description: "The access token is invalid", type: DefaultUnauthorizedError})
+  @ApiOperation({ summary: "Gets a list of user's posts." })
+  @ApiOkResponse({ type: BasePost })
+  @ApiNotFoundResponse({ type: DefaultNotFoundError })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @UseGuards(JwtGuard)
@@ -61,9 +62,9 @@ export class PostsController {
     return await this.postsService.getUsersPosts(username)
   }
 
-  @ApiOperation({summary: "Update a post.", description: "Post updates are controlled with permissions. A normal user cannot update someone else's posts, but moderators and admins can."})
-  @ApiForbiddenResponse({description: "Insufficient permissions", type: InsufficientPermissionsError})
-  @ApiUnauthorizedResponse({description: "The access token is invalid", type: DefaultUnauthorizedError})
+  @ApiOperation({ summary: "Update a post.", description: "Post updates are controlled with permissions. A normal user cannot update someone else's posts, but moderators and admins can." })
+  @ApiForbiddenResponse({ description: "Insufficient permissions", type: InsufficientPermissionsError })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @UseGuards(JwtGuard)
@@ -73,17 +74,16 @@ export class PostsController {
     return await this.postsService.update(user, id, updatePostDto);
   }
 
-  @ApiOperation({summary: "Delete a post.", description: "Post deletions are controlled with permissions. A normal user cannot delete someone else's posts, but moderators and admins can."})
-  @ApiOkResponse({description: "Post deleted successfully"})
-  @ApiNotFoundResponse({type: DefaultNotFoundError})
-  @ApiForbiddenResponse({description: "Insufficient permissions", type: InsufficientPermissionsError})
-  @ApiUnauthorizedResponse({description: "The access token is invalid", type: DefaultUnauthorizedError})
+  @ApiOperation({ summary: "Delete a post.", description: "Post deletions are controlled with permissions. A normal user cannot delete someone else's posts, but moderators and admins can." })
+  @ApiOkResponse({ description: "Post deleted successfully" })
+  @ApiNotFoundResponse({ type: DefaultNotFoundError })
+  @ApiForbiddenResponse({ description: "Insufficient permissions", type: InsufficientPermissionsError })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @UseGuards(JwtGuard)
   @Delete(':id')
   async remove(@Param('id') id: number, @Request() req) {
-    //TODO: implement RBAC
     const user: User = req.user;
 
     const post: PostEntity = await this.postsService.findOne(id);
@@ -91,9 +91,10 @@ export class PostsController {
       throw new NotFoundException()
     }
 
-    if (post.user.id !== user.id) {
+    const canDelete = await this.casbin.enforce(user.role.name, 'post', 'delete')
+    if (post.user.id !== user.id && !canDelete) {
       throw new UnauthorizedException();
-    }    
+    }
 
     return await this.postsService.remove(user, id);
   }

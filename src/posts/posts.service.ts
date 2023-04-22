@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { Post } from './entities/post.entity';
 import { User } from 'src/users/entities/user.entity';
 import { BasePost } from './entities/base-post.entity';
+import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
 
 @Injectable()
 export class PostsService {
@@ -49,7 +50,7 @@ export class PostsService {
     const post: Post = result[0]
 
     if (user.id !== post.user.id) {
-      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
+      throw new InsufficientPermissionsException() 
     }
 
     post.body = updatePostDto.body;

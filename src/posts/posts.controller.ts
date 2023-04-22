@@ -12,6 +12,7 @@ import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
 import { throwError } from 'rxjs';
+import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -96,7 +97,7 @@ export class PostsController {
 
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.Post, RBACAction.Delete)
     if (post.user.id !== user.id && !canDelete) {
-      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
+      throw new InsufficientPermissionsException()
     }
 
     return await this.postsService.remove(user, id);

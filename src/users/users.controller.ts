@@ -17,6 +17,7 @@ import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse
 import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
+import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
 
 @ApiTags('users')
 @Controller('users')
@@ -164,7 +165,6 @@ export class UsersController {
       throw new HttpException('please provide a password reset token', HttpStatus.BAD_REQUEST);
     }
 
-    //TODO: return a response according to the docs
     await this.usersService.resetUserPasswordByResetToken(passwordResetDto.password, token);
   }
 
@@ -181,7 +181,7 @@ export class UsersController {
 
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.User, RBACAction.Delete);
     if (!canDelete) {
-      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
+      throw new InsufficientPermissionsException()
     }
 
     await this.usersService.remove(id);

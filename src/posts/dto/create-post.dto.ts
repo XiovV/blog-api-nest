@@ -1,4 +1,4 @@
-import { ApiProduces, ApiProperty } from "@nestjs/swagger"
+import { ApiProperty } from "@nestjs/swagger"
 import { Length } from "class-validator"
 
 export class CreatePostDto {

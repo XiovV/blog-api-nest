@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthService } from 'src/auth/auth.service';
@@ -15,6 +15,8 @@ import { PasswordResetDto } from './dto/password-reset.dto';
 import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse, ForbiddenError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
 import { Casbin } from 'src/casbin/casbin';
+import { RBACObject } from 'src/casbin/enum/object.enum';
+import { RBACAction } from 'src/casbin/enum/action.enum';
 
 @ApiTags('users')
 @Controller('users')
@@ -164,5 +166,19 @@ export class UsersController {
 
     //TODO: return a response according to the docs
     await this.usersService.resetUserPasswordByResetToken(passwordResetDto.password, token);
+  }
+
+  @Version('1')
+  @UseGuards(JwtGuard)
+  @Delete(':id')
+  async deleteUser(@Param('id') id: number, @Request() req) {
+    const user: User = req.user;
+
+    const canDelete = await this.casbin.enforce(user.role.name, RBACObject.User, RBACAction.Delete);
+    if (!canDelete) {
+      throw new UnauthorizedException();
+    }
+
+    await this.usersService.remove(id);
   }
 }

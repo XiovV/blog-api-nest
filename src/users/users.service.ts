@@ -7,6 +7,8 @@ import { User } from './entities/user.entity';
 import * as argon2 from 'argon2';
 import { BlacklistedToken } from './entities/token-blacklist.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { Role } from './entities/role.entity';
+import { Role as RoleEnum} from './enum/role.enum';
 
 @Injectable()
 export class UsersService {
@@ -18,12 +20,16 @@ export class UsersService {
     user.email = createUserDto.email;
     user.password = await argon2.hash(createUserDto.password);
 
-    const existingUsername = await this.usersRepository.findOneBy({username: createUserDto.username});
+    const defaultRole = new Role();
+    defaultRole.id = RoleEnum.Normal;
+    user.role = defaultRole;
+
+    const existingUsername = await this.usersRepository.findOneBy({ username: createUserDto.username });
     if (existingUsername) {
       throw new HttpException('username already exists', HttpStatus.CONFLICT);
     }
 
-    const existingEmail = await this.usersRepository.findOneBy({email: createUserDto.email})
+    const existingEmail = await this.usersRepository.findOneBy({ email: createUserDto.email })
     if (existingEmail) {
       throw new HttpException('email already exists', HttpStatus.CONFLICT);
     }
@@ -31,8 +37,8 @@ export class UsersService {
     const result = await this.usersRepository.insert(user);
 
     user.id = result.identifiers[0].id;
-    
-    return user; 
+
+    return user;
   }
 
   async loginUserRecovery(user: User, recoveryCode: string) {
@@ -56,11 +62,11 @@ export class UsersService {
   }
 
   async isTokenBlacklisted(refreshToken: string): Promise<boolean> {
-    const foundToken = await this.blacklistedTokenRepository.findOneBy({token: refreshToken})
+    const foundToken = await this.blacklistedTokenRepository.findOneBy({ token: refreshToken })
     if (!foundToken) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -102,17 +108,17 @@ export class UsersService {
     const currentTime = new Date();
     currentTime.setMinutes(currentTime.getMinutes() + 20)
 
-    resetToken.expiry = currentTime.getTime(); 
+    resetToken.expiry = currentTime.getTime();
 
     await this.passwordResetTokenRepository.save(resetToken);
   }
 
   async findOneByUsername(username: string): Promise<User | undefined> {
-    return await this.usersRepository.findOneBy({username})
+    return await this.usersRepository.findOneBy({ username })
   }
 
   async findOneByEmail(email: string): Promise<User | undefined> {
-    return await this.usersRepository.findOneBy({email})
+    return await this.usersRepository.findOneBy({ email })
   }
 
   async saveMfaDetails(user: User, secret: Buffer, recoveryCodes: string[]) {
@@ -127,7 +133,8 @@ export class UsersService {
   }
 
   async findOneById(id: number): Promise<User | undefined> {
-    return await this.usersRepository.findOneBy({id: id})
+    const res: User[] = await this.usersRepository.find({ where: { id }, relations: { role: true } })
+    return res[0]
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {

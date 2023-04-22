@@ -13,7 +13,7 @@ import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
 import { PasswordResetDto } from './dto/password-reset.dto';
 import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse, ForbiddenError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
+import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse, ForbiddenError, InsufficientPermissionsError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
 import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
@@ -103,7 +103,7 @@ export class UsersController {
     description: "Used only when the access token has expired. If a previously used refresh token is used again, the user's account will be locked for security reasons."
   })
   @ApiOkResponse({ description: "Tokens have been refreshed successfully", type: TokenPair })
-  @ApiUnauthorizedResponse({description: "The access token or refresh token is invalid", type: DefaultUnauthorizedError})
+  @ApiUnauthorizedResponse({ description: "The access token or refresh token is invalid", type: DefaultUnauthorizedError })
   @ApiBearerAuth()
   @Version('1')
   @HttpCode(HttpStatus.OK)
@@ -132,9 +132,9 @@ export class UsersController {
   }
 
 
-  @ApiOperation({summary: "Sends a password reset email."})
-  @ApiAcceptedResponse({description: "Email has been sent"})
-  @ApiNotFoundResponse({description: "The provided email does not exist", type: NotFoundError})
+  @ApiOperation({ summary: "Sends a password reset email." })
+  @ApiAcceptedResponse({ description: "Email has been sent" })
+  @ApiNotFoundResponse({ description: "The provided email does not exist", type: NotFoundError })
   @Version('1')
   @HttpCode(HttpStatus.ACCEPTED)
   @Post('password-reset')
@@ -151,10 +151,10 @@ export class UsersController {
     this.mailerService.sendPasswordResetMail(user.email, user.username, passwordResetToken);
   }
 
-  @ApiOperation({summary: "Changes the user's password."})
-  @ApiQuery({name: "password reset token"})
-  @ApiOkResponse({description: "Password has been changed successfully"})
-  @ApiBadRequestResponse({description: 'The password reset token was not provided', type: BadRequestError})
+  @ApiOperation({ summary: "Changes the user's password." })
+  @ApiQuery({ name: "password reset token" })
+  @ApiOkResponse({ description: "Password has been changed successfully" })
+  @ApiBadRequestResponse({ description: 'The password reset token was not provided', type: BadRequestError })
   @Version('1')
   @HttpCode(HttpStatus.OK)
   @Put('password-reset')
@@ -168,6 +168,11 @@ export class UsersController {
     await this.usersService.resetUserPasswordByResetToken(passwordResetDto.password, token);
   }
 
+
+  @ApiOperation({ summary: "Deletes a user.", description: "User deletions are controlled with permissions. A normal user cannot delete another user, only admins can." })
+  @ApiOkResponse({description: "User deleted successfully"})
+  @ApiForbiddenResponse({ description: "Insufficient permissions", type: InsufficientPermissionsError })
+  @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @Version('1')
   @UseGuards(JwtGuard)
   @Delete(':id')
@@ -176,7 +181,7 @@ export class UsersController {
 
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.User, RBACAction.Delete);
     if (!canDelete) {
-      throw new UnauthorizedException();
+      throw new HttpException('Insufficient Permissions', HttpStatus.FORBIDDEN)
     }
 
     await this.usersService.remove(id);

@@ -14,11 +14,12 @@ import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
 import { PasswordResetDto } from './dto/password-reset.dto';
 import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
 import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse, ForbiddenError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
+import { Casbin } from 'src/casbin/casbin';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService) { }
+  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService, private casbin: Casbin) { }
 
   @ApiOperation({ summary: "Registers a user into the system.", description: "Inserts a user into the database if the username or email haven't already been taken." })
   @ApiCreatedResponse({ description: 'User has been successfully created', type: TokenPair })

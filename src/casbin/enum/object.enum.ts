@@ -1,4 +1,4 @@
-export enum Object {
+export enum RBACObject {
     Post = "post",
     User = "user"
 }

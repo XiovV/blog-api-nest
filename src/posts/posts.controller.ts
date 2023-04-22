@@ -9,8 +9,8 @@ import { ApiBearerAuth, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundRes
 import { BasePost } from './entities/base-post.entity';
 import { DefaultNotFoundError, DefaultUnauthorizedError, InsufficientPermissionsError, NotFoundError } from 'src/swagger/swagger.responses';
 import { Casbin } from 'src/casbin/casbin';
-import { Object } from 'src/casbin/enum/object.enum';
-import { Action } from 'src/casbin/enum/action.enum';
+import { RBACObject } from 'src/casbin/enum/object.enum';
+import { RBACAction } from 'src/casbin/enum/action.enum';
 
 @ApiTags('posts')
 @Controller('posts')
@@ -93,7 +93,7 @@ export class PostsController {
       throw new NotFoundException()
     }
 
-    const canDelete = await this.casbin.enforce(user.role.name, Object.Post, Action.Delete)
+    const canDelete = await this.casbin.enforce(user.role.name, RBACObject.Post, RBACAction.Delete)
     if (post.user.id !== user.id && !canDelete) {
       throw new UnauthorizedException();
     }

@@ -9,11 +9,12 @@ import { CryptoService } from 'src/crypto/crypto.service';
 import { BlacklistedToken } from './entities/token-blacklist.entity';
 import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { Casbin } from 'src/casbin/casbin';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, BlacklistedToken, PasswordResetToken])],
   controllers: [UsersController],
-  providers: [UsersService, AuthService, JwtService, CryptoService, MailerService],
+  providers: [UsersService, AuthService, JwtService, CryptoService, MailerService, Casbin],
   exports: [UsersService],
 })
 export class UsersModule {}

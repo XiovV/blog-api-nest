@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException, HttpException, HttpStatus, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -61,8 +61,9 @@ export class PostsController {
   @Version('1')
   @UseGuards(JwtGuard)
   @Get('user/:username')
-  async getUsersPosts(@Param('username') username: string) {
-    return await this.postsService.getUsersPosts(username)
+  async getUsersPosts(@Param('username') username: string, @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1, @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10) {
+    limit = limit > 100 ? 100 : limit
+    return await this.postsService.getUsersPosts(username, { page, limit })
   }
 
   @ApiOperation({ summary: "Update a post.", description: "Post updates are controlled with permissions. A normal user cannot update someone else's posts, but moderators and admins can." })

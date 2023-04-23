@@ -7,6 +7,7 @@ import { Post } from './entities/post.entity';
 import { User } from 'src/users/entities/user.entity';
 import { BasePost } from './entities/base-post.entity';
 import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
+import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class PostsService {
@@ -33,12 +34,16 @@ export class PostsService {
     return post[0];
   }
 
-  async getUsersPosts(username: string) {
+  async getUsersPosts(username: string, options: IPaginationOptions) {
     const user: User = await this.usersRepository.findOneBy({username})
 
-    return await this.postsRepository.createQueryBuilder('post')
-    .where('post.userId = :userId', { userId: user.id })
+
+    const queryBuilder = this.postsRepository.createQueryBuilder('post');
+    queryBuilder.where('post.userId = :userId', { userId: user.id })
+    .orderBy('post.id', 'ASC')
     .getMany();
+    
+    return paginate<Post>(queryBuilder, options)
   }
 
   async remove(user: User, id: number) {

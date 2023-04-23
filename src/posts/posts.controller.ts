@@ -11,7 +11,6 @@ import { DefaultNotFoundError, DefaultUnauthorizedError, InsufficientPermissions
 import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
-import { throwError } from 'rxjs';
 import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
 
 @ApiTags('posts')

@@ -113,11 +113,7 @@ export class UsersController {
   async refreshToken(@Body(new ValidationPipe()) refreshTokenDto: RefreshTokenDto, @Request() req) {
     const user: User = req.user;
 
-    try {
-      await this.authService.validateRefreshToken(refreshTokenDto.refreshToken, user.id);
-    } catch (error) {
-      throw error;
-    }
+    await this.authService.validateRefreshToken(refreshTokenDto.refreshToken, user.id).catch(() => { throw new UnauthorizedException() });
 
     const isTokenBlacklisted = await this.usersService.isTokenBlacklisted(refreshTokenDto.refreshToken)
 
@@ -170,7 +166,7 @@ export class UsersController {
 
 
   @ApiOperation({ summary: "Deletes a user.", description: "User deletions are controlled with permissions. A normal user cannot delete another user, only admins can." })
-  @ApiOkResponse({description: "User deleted successfully"})
+  @ApiOkResponse({ description: "User deleted successfully" })
   @ApiForbiddenResponse({ description: "Insufficient permissions", type: InsufficientPermissionsError })
   @ApiUnauthorizedResponse({ description: "The access token is invalid", type: DefaultUnauthorizedError })
   @Version('1')

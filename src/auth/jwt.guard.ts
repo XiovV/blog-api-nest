@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import { CanActivate, ExecutionContext, HttpException, HttpStatus, Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService, JwtVerifyOptions } from "@nestjs/jwt";
 import { Request } from "express";
@@ -6,7 +6,7 @@ import { UsersService } from "src/users/users.service";
 
 @Injectable()
 export class JwtGuard implements CanActivate {
-    constructor(private jwtService: JwtService, private config: ConfigService, private usersService: UsersService) {}
+    constructor(private jwtService: JwtService, private config: ConfigService, private usersService: UsersService) { }
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request: Request = context.switchToHttp().getRequest();
@@ -21,14 +21,14 @@ export class JwtGuard implements CanActivate {
             ignoreExpiration: request.url === '/v1/users/token/refresh' ? true : false
         }
 
-        try {
-            const payload = await this.jwtService.verifyAsync(token, verifyTokenOptions);
+        const payload = await this.jwtService.verifyAsync(token, verifyTokenOptions).catch(() => { throw new UnauthorizedException() });
 
-            const user = await this.usersService.findOneById(payload.sub);
-            request['user'] = user;
-        } catch {
-            throw new UnauthorizedException();
+        const user = await this.usersService.findOneById(payload.sub);
+        if (!user) {
+            throw new HttpException('user not found', HttpStatus.NOT_FOUND);
         }
+
+        request['user'] = user;
 
         return true;
     }

@@ -37,7 +37,6 @@ export class PostsService {
   async getUsersPosts(username: string, options: IPaginationOptions) {
     const user: User = await this.usersRepository.findOneBy({username})
 
-
     const queryBuilder = this.postsRepository.createQueryBuilder('post');
     queryBuilder.where('post.userId = :userId', { userId: user.id })
     .orderBy('post.id', 'ASC')
@@ -46,7 +45,7 @@ export class PostsService {
     return paginate<Post>(queryBuilder, options)
   }
 
-  async remove(user: User, id: number) {
+  async remove(id: number) {
     await this.postsRepository.delete({id})
   }
 

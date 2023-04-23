@@ -32,14 +32,12 @@ export class AuthService {
     }
 
     async validateLoginCredentials(username: string, password: string): Promise<User> {
-        const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException });
-
+        const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException() });
         if (!user) {
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
         const isPasswordValid = await argon2.verify(user.password, password)
-
         if (!isPasswordValid) {
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
@@ -58,16 +56,11 @@ export class AuthService {
     }
 
     async validateRefreshToken(refreshToken: string, userId: number) {
-        try {
-            const payload = await this.jwtService.verifyAsync(refreshToken, { secret: this.config.get('JWT_SECRET') });
+        const payload = await this.jwtService.verifyAsync(refreshToken, { secret: this.config.get('JWT_SECRET') }).catch(() => { throw new UnauthorizedException() });
 
-            if (payload.sub !== userId) {
-                throw new UnauthorizedException();
-            }
-        } catch {
+        if (payload.sub !== userId) {
             throw new UnauthorizedException();
         }
-
     }
 
     generateMfaSecret(): string {

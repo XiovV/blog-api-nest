@@ -100,6 +100,6 @@ export class PostsController {
       throw new InsufficientPermissionsException()
     }
 
-    return await this.postsService.remove(user, id);
+    return await this.postsService.remove(id);
   }
 }

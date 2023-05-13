@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { User } from 'src/users/entities/user.entity';
@@ -10,22 +10,26 @@ import { CryptoService } from 'src/crypto/crypto.service';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name)
     constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService) { }
 
     async login(username: string, password: string, totp?: string): Promise<any> {
         const user = await this.validateLoginCredentials(username, password);
 
         if (!totp && user.mfaSecret) {
+            this.logger.log({ username, error: 'user has 2FA enabled but a totp wasn not provided' }, 'user login failed')
             throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.FORBIDDEN);
         }
 
-        if (totp && user.mfaSecret) {
-            const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
-            const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
+        if (!user.mfaSecret) {
+            return await this.generateTokenPair(user);
+        }
 
-            if (!isTOTPValid) {
-                throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
-            }
+        const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
+        const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
+
+        if (!isTOTPValid) {
+            throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
         }
 
         return await this.generateTokenPair(user);

@@ -18,7 +18,7 @@ export class AuthService {
         const user = await this.validateLoginCredentials(username, password);
 
         if (!totp && user.mfaSecret) {
-            this.logger.log({ username, error: 'user has 2FA enabled but a totp wasn not provided' }, 'user login failed')
+            this.logger.warn({ username, error: 'user has 2FA enabled but a totp wasn not provided' }, 'user login failed')
             throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.FORBIDDEN);
         }
 
@@ -31,7 +31,7 @@ export class AuthService {
         const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 
         if (!isTOTPValid) {
-            this.logger.error({username}, 'the provided totp code is incorrect')
+            this.logger.warn({username}, 'the provided totp code is incorrect')
             throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
         }
 
@@ -42,13 +42,13 @@ export class AuthService {
     async validateLoginCredentials(username: string, password: string): Promise<User> {
         const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException() });
         if (!user) {
-            this.logger.error({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
+            this.logger.warn({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
         const isPasswordValid = await argon2.verify(user.password, password)
         if (!isPasswordValid) {
-            this.logger.error({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
+            this.logger.warn({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 

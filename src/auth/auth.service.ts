@@ -14,6 +14,7 @@ export class AuthService {
     constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService) { }
 
     async login(username: string, password: string, totp?: string): Promise<any> {
+        this.logger.log({ username }, 'validating login credentials')
         const user = await this.validateLoginCredentials(username, password);
 
         if (!totp && user.mfaSecret) {
@@ -22,6 +23,7 @@ export class AuthService {
         }
 
         if (!user.mfaSecret) {
+            this.logger.log({username}, 'user logged in successfully')
             return await this.generateTokenPair(user);
         }
 
@@ -29,20 +31,24 @@ export class AuthService {
         const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 
         if (!isTOTPValid) {
+            this.logger.error({username}, 'the provided totp code is incorrect')
             throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
         }
 
+        this.logger.log({username}, 'user logged in successfully')
         return await this.generateTokenPair(user);
     }
 
     async validateLoginCredentials(username: string, password: string): Promise<User> {
         const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException() });
         if (!user) {
+            this.logger.error({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
         const isPasswordValid = await argon2.verify(user.password, password)
         if (!isPasswordValid) {
+            this.logger.error({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 

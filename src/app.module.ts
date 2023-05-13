@@ -11,22 +11,49 @@ import { PasswordResetToken } from './users/entities/password-reset-token.entity
 import { PostsModule } from './posts/posts.module';
 import { Post } from './posts/entities/post.entity';
 import { Role } from './users/entities/role.entity';
+import { LoggerModule } from 'nestjs-pino';
 
 @Module({
-  imports: [ConfigModule.forRoot({isGlobal: true}), TypeOrmModule.forRootAsync({
+  imports: [ConfigModule.forRoot({ isGlobal: true }),
+  TypeOrmModule.forRootAsync({
     imports: [ConfigModule],
-    useFactory: (configService: ConfigService) => ({
+    inject: [ConfigService],
+    useFactory: (config: ConfigService) => ({
       type: 'postgres',
-      host: configService.get('DATABASE_HOST'),
-      port: +configService.get('DATABASE_PORT'),
-      username: configService.get('DATABASE_USERNAME'),
-      password: configService.get('DATABASE_PASSWORD'),
-      database: configService.get('DATABASE'),
+      host: config.get('DATABASE_HOST'),
+      port: +config.get('DATABASE_PORT'),
+      username: config.get('DATABASE_USERNAME'),
+      password: config.get('DATABASE_PASSWORD'),
+      database: config.get('DATABASE'),
       entities: [User, BlacklistedToken, PasswordResetToken, Post, Role],
       synchronize: true,
     }),
-    inject: [ConfigService]
-
+  }),
+  LoggerModule.forRootAsync({
+    imports: [ConfigModule],
+    inject: [ConfigService],
+    useFactory: async (config: ConfigService) => {
+      return {
+        pinoHttp: {
+          serializers: {
+            req: (req) => ({
+              id: req.id,
+              method: req.method,
+              url: req.url
+            })
+          },
+          level: config.get('LOG_LEVEL') || 'info',
+          transport: config.get('NODE_ENV') !== 'production' ? { target: 'pino-pretty' } : undefined,
+          formatters: {
+            level(level) {
+              return { level }
+            },
+          }
+        }
+        
+      }
+    }
   }), UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],
+  providers: [],
 })
-export class AppModule {}
+export class AppModule { }

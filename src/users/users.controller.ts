@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param, Logger } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthService } from 'src/auth/auth.service';
@@ -13,7 +13,7 @@ import { MailerService } from 'src/mailer/mailer.service';
 import { PasswordResetEmailDto } from './dto/password-reset-email.dto';
 import { PasswordResetDto } from './dto/password-reset.dto';
 import { ApiAcceptedResponse, ApiBadRequestResponse, ApiBearerAuth, ApiConflictResponse, ApiCreatedResponse, ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiOperation, ApiQuery, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { BadRequestError, ConflictError, DefaultUnauthorizedError, ErrorResponse, ForbiddenError, InsufficientPermissionsError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
+import { BadRequestError, ConflictError, DefaultUnauthorizedError, ForbiddenError, InsufficientPermissionsError, NotFoundError, SetupMFAResponse, TokenPair, UnauthorizedError } from 'src/swagger/swagger.responses';
 import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
@@ -22,6 +22,7 @@ import { InsufficientPermissionsException } from 'src/errors/insufficient-permis
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name)
   constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService, private casbin: Casbin) { }
 
   @ApiOperation({ summary: "Registers a user into the system.", description: "Inserts a user into the database if the username or email haven't already been taken." })
@@ -30,6 +31,7 @@ export class UsersController {
   @Version('1')
   @Post('register')
   async create(@Body(new ValidationPipe()) createUserDto: CreateUserDto) {
+    this.logger.log({username: createUserDto.username, email: createUserDto.email}, 'attempting to create a new user')
     const createdUser = await this.usersService.create(createUserDto);
 
     return await this.authService.generateTokenPair(createdUser);
@@ -45,6 +47,7 @@ export class UsersController {
   @Version('1')
   @Post('login')
   async login(@Body(new ValidationPipe()) loginUserDto: LoginUserDto) {
+    this.logger.log({username: loginUserDto.username}, 'attempting to log a user in')
     return this.authService.login(loginUserDto.username, loginUserDto.password, loginUserDto.totp);
   }
 

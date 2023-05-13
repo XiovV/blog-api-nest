@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -12,6 +12,7 @@ import { Role as RoleEnum} from './enum/role.enum';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name)
   constructor(@InjectRepository(User) private usersRepository: Repository<User>, @InjectRepository(BlacklistedToken) private blacklistedTokenRepository: Repository<BlacklistedToken>, @InjectRepository(PasswordResetToken) private passwordResetTokenRepository: Repository<PasswordResetToken>) { }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -26,15 +27,18 @@ export class UsersService {
 
     const existingUsername = await this.usersRepository.findOneBy({ username: createUserDto.username });
     if (existingUsername) {
+      this.logger.error({username: createUserDto.username, email: createUserDto.email, error: 'username already exists'}, 'failed to create user')
       throw new HttpException('username already exists', HttpStatus.CONFLICT);
     }
 
     const existingEmail = await this.usersRepository.findOneBy({ email: createUserDto.email })
     if (existingEmail) {
+      this.logger.error({username: createUserDto.username, email: createUserDto.email, error: 'email already exists'}, 'failed to create user')
       throw new HttpException('email already exists', HttpStatus.CONFLICT);
     }
 
     const result = await this.usersRepository.insert(user);
+    this.logger.log({username: createUserDto.username, email: createUserDto.email}, 'user created successfully')
 
     user.id = result.identifiers[0].id;
 

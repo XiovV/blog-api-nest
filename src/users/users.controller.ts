@@ -26,7 +26,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 export class UsersController {
   private readonly logger: Logger
   constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService, private casbin: Casbin, @Inject(WINSTON_MODULE_PROVIDER) private readonly winston: Logger) {
-    this.logger = this.winston.child({context: UsersController.name})
+    this.logger = this.winston.child({ context: UsersController.name })
   }
 
   @ApiOperation({ summary: "Registers a user into the system.", description: "Inserts a user into the database if the username or email haven't already been taken." })
@@ -79,7 +79,7 @@ export class UsersController {
   @Get('mfa')
   async setupMfa(@Request() req) {
     const user: User = req.user;
-    this.logger.info('generating mfa secret', {username: user.username})
+    this.logger.info('generating mfa secret', { username: user.username })
     const secret = this.authService.generateMfaSecret();
 
     return { secret }
@@ -94,11 +94,11 @@ export class UsersController {
   @Put('mfa/confirm')
   async confirmMfa(@Body(new ValidationPipe()) confirmMfaDto: ConfirmMfaDto, @Request() req) {
     const user: User = req.user;
-    const childLogger = this.logger.child({username: user.username})
+    const childLogger = this.logger.child({ username: user.username })
 
     childLogger.info('attempting to verify the totp code')
     if (!this.authService.verifyTOTPCode(confirmMfaDto.totp, confirmMfaDto.secret)) {
-      childLogger.warn('failed to verify the totp code', {error: "the provided totp code is invalid"})
+      childLogger.warn('failed to verify the totp code', { error: "the provided totp code is invalid" })
       throw new HttpException('the provided totp is invalid', HttpStatus.BAD_REQUEST);
     }
 
@@ -125,7 +125,7 @@ export class UsersController {
   @Post('token/refresh')
   async refreshToken(@Body(new ValidationPipe()) refreshTokenDto: RefreshTokenDto, @Request() req) {
     const user: User = req.user;
-    const childLogger = this.logger.child({username: user.username})
+    const childLogger = this.logger.child({ username: user.username })
 
     childLogger.info('attempting to validate the refresh token')
     await this.authService.validateRefreshToken(refreshTokenDto.refreshToken, user.id).catch(() => { throw new UnauthorizedException() });
@@ -154,11 +154,11 @@ export class UsersController {
   @HttpCode(HttpStatus.ACCEPTED)
   @Post('password-reset')
   async sendPasswordResetMail(@Body(new ValidationPipe()) passwordResetEmailDto: PasswordResetEmailDto) {
-    const childLogger = this.logger.child({email: passwordResetEmailDto.email})
-    
+    const childLogger = this.logger.child({ email: passwordResetEmailDto.email })
+
     const user = await this.usersService.findOneByEmail(passwordResetEmailDto.email)
     if (!user) {
-      childLogger.warn('failed to send a password reset email', {error: 'a user with this email does not exist'})
+      childLogger.warn('failed to send a password reset email', { error: 'a user with this email does not exist' })
       throw new HttpException('a user with this email does not exist', HttpStatus.NOT_FOUND);
     }
 
@@ -179,11 +179,11 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   @Put('password-reset')
   async resetUserPassword(@Body(new ValidationPipe()) passwordResetDto: PasswordResetDto, @Query() query) {
-    const childLogger = this.logger.child({passwordResetToken: passwordResetDto.password})
+    const childLogger = this.logger.child({ passwordResetToken: passwordResetDto.password })
 
     const { token } = query;
     if (!token) {
-      childLogger.warn('failed to reset a password', {error: 'the password reset token was not provided'})
+      childLogger.warn('failed to reset a password', { error: 'the password reset token was not provided' })
       throw new HttpException('please provide a password reset token', HttpStatus.BAD_REQUEST);
     }
 
@@ -200,13 +200,13 @@ export class UsersController {
   @Delete(':id')
   async deleteUser(@Param('id') id: number, @Request() req) {
     const user: User = req.user;
-    
-    const childLogger = this.logger.child({username: user.username, role: user.role.name, userToDeleteId: id})
+
+    const childLogger = this.logger.child({ username: user.username, role: user.role.name, userToDeleteId: id })
 
     childLogger.info('checking permissions')
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.User, RBACAction.Delete);
     if (!canDelete) {
-      childLogger.warn('failed to delete the user', {error: 'user has insufficient permissions'})
+      childLogger.warn('failed to delete the user', { error: 'user has insufficient permissions' })
       throw new InsufficientPermissionsException()
     }
 

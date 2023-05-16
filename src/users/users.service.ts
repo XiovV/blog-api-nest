@@ -17,7 +17,7 @@ export class UsersService {
   private readonly logger: Logger
 
   constructor(@InjectRepository(User) private usersRepository: Repository<User>, @InjectRepository(BlacklistedToken) private blacklistedTokenRepository: Repository<BlacklistedToken>, @InjectRepository(PasswordResetToken) private passwordResetTokenRepository: Repository<PasswordResetToken>, @Inject(WINSTON_MODULE_PROVIDER) private readonly winston: Logger) {
-    this.logger = this.winston.child({context: UsersService.name})
+    this.logger = this.winston.child({ context: UsersService.name })
   }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
@@ -54,7 +54,7 @@ export class UsersService {
   }
 
   async loginUserRecovery(user: User, recoveryCode: string) {
-    const childLogger = this.logger.child({username: user.username})
+    const childLogger = this.logger.child({ username: user.username })
     childLogger.info('attempting to log a user in via a recovery code')
 
     const isRecoveryCodeValid = user.recovery.includes(recoveryCode);

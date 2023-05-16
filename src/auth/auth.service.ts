@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { authConstants } from './constants';
 import { CryptoService } from 'src/crypto/crypto.service';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { Logger } from 'winston'
+import { Logger, child } from 'winston'
 
 @Injectable()
 export class AuthService {
@@ -23,7 +23,7 @@ export class AuthService {
 
         const user = await this.validateLoginCredentials(username, password);
         if (!totp && user.mfaSecret) {
-            this.logger.warn('user login failed', { error: 'user has 2FA enabled a totp code was not provided' })
+            childLogger.warn('user login failed', { error: 'user has 2FA enabled a totp code was not provided' })
             throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.FORBIDDEN);
         }
 
@@ -33,16 +33,16 @@ export class AuthService {
         }
 
         //TODO: consider wrapping this into a function
-        this.logger.info('attemptign to verify totp code')
+        childLogger.info('attemptign to verify totp code')
         const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
         const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 
         if (!isTOTPValid) {
-            this.logger.warn('the provided totp code incorrect')
+            childLogger.warn('the provided totp code incorrect')
             throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
         }
 
-        this.logger.info('user logged in successfully')
+        childLogger.info('user logged in successfully')
         return await this.generateTokenPair(user);
     }
 
@@ -52,13 +52,13 @@ export class AuthService {
 
         const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException() });
         if (!user) {
-            this.logger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
+            childLogger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
         const isPasswordValid = await argon2.verify(user.password, password)
         if (!isPasswordValid) {
-            this.logger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
+            childLogger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
@@ -78,7 +78,9 @@ export class AuthService {
     }
 
     async validateRefreshToken(refreshToken: string, userId: number) {
-        const payload = await this.jwtService.verifyAsync(refreshToken, { secret: this.config.get('JWT_SECRET') }).catch(() => { throw new UnauthorizedException() });
+        const payload = await this.jwtService.verifyAsync(refreshToken, { secret: this.config.get('JWT_SECRET') }).catch(() => { 
+            throw new UnauthorizedException() 
+        });
 
         if (payload.sub !== userId) {
             throw new UnauthorizedException();
@@ -86,7 +88,6 @@ export class AuthService {
     }
 
     generateMfaSecret(): string {
-        this.logger.info('generating mfa secret')
         const secret = speakeasy.generateSecret();
 
         return secret.base32;

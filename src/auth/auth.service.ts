@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, InternalServerErrorException, Logger, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { User } from 'src/users/entities/user.entity';
@@ -7,48 +7,58 @@ import * as speakeasy from 'speakeasy'
 import { ConfigService } from '@nestjs/config';
 import { authConstants } from './constants';
 import { CryptoService } from 'src/crypto/crypto.service';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston'
 
 @Injectable()
 export class AuthService {
-    private readonly logger = new Logger(AuthService.name)
-    constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService) { }
+    private readonly logger: Logger
+    constructor(private usersService: UsersService, private jwtService: JwtService, private config: ConfigService, private cryptoService: CryptoService, @Inject(WINSTON_MODULE_PROVIDER) private readonly winston: Logger) {
+        this.logger = this.winston.child({context: AuthService.name})
+    }
 
     async login(username: string, password: string, totp?: string): Promise<any> {
-        this.logger.log({ username }, 'validating login credentials')
-        const user = await this.validateLoginCredentials(username, password);
+        const childLogger = this.logger.child({ username })
+        childLogger.info('attempting to a log a user in')
 
+        const user = await this.validateLoginCredentials(username, password);
         if (!totp && user.mfaSecret) {
-            this.logger.warn({ username, error: 'user has 2FA enabled but a totp wasn not provided' }, 'user login failed')
+            this.logger.warn('user login failed', { error: 'user has 2FA enabled a totp code was not provided' })
             throw new HttpException('this user has 2FA enabled, please provide a totp code', HttpStatus.FORBIDDEN);
         }
 
         if (!user.mfaSecret) {
-            this.logger.log({username}, 'user logged in successfully')
+            this.logger.info('user logged in successfully')
             return await this.generateTokenPair(user);
         }
 
+        //TODO: consider wrapping this into a function
+        this.logger.info('attemptign to verify totp code')
         const decryptedSecret = await this.cryptoService.decryptMfaSecret(user.mfaSecret)
         const isTOTPValid = this.verifyTOTPCode(totp, decryptedSecret);
 
         if (!isTOTPValid) {
-            this.logger.warn({username}, 'the provided totp code is incorrect')
+            this.logger.warn('the provided totp code incorrect')
             throw new HttpException('totp code is incorrect', HttpStatus.UNAUTHORIZED)
         }
 
-        this.logger.log({username}, 'user logged in successfully')
+        this.logger.info('user logged in successfully')
         return await this.generateTokenPair(user);
     }
 
     async validateLoginCredentials(username: string, password: string): Promise<User> {
+        const childLogger = this.logger.child({ username })
+        childLogger.info('validating login credentials')
+
         const user = await this.usersService.findOneByUsername(username).catch(() => { throw new InternalServerErrorException() });
         if (!user) {
-            this.logger.warn({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
+            this.logger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
         const isPasswordValid = await argon2.verify(user.password, password)
         if (!isPasswordValid) {
-            this.logger.warn({username, error: 'username or password is incorrect'}, 'failed to validate login credentials')
+            this.logger.warn('failed to validate login credentials', { error: 'username or password is incorrect' })
             throw new HttpException('username or password is incorrect', HttpStatus.UNAUTHORIZED);
         }
 
@@ -56,6 +66,8 @@ export class AuthService {
     }
 
     async generateTokenPair(user: User) {
+        this.logger.info('generating token pair', { user: user.username })
+
         const accessTokenClaims = { sub: user.id, username: user.username }
         const refreshTokenClaims = { sub: user.id, type: "REFRESH" }
 
@@ -74,6 +86,7 @@ export class AuthService {
     }
 
     generateMfaSecret(): string {
+        this.logger.info('generating mfa secret')
         const secret = speakeasy.generateSecret();
 
         return secret.base32;

@@ -10,7 +10,9 @@ export class LoggerMiddleware implements NestMiddleware {
     this.logger = this.winston.child({ context: LoggerMiddleware.name })
   }
   use(req: Request, res: Response, next: () => void) {
-    this.logger.info('incoming request', { req: { method: req.method, url: req.baseUrl, query: req.query, params: req.params, headers: req.headers } })
+    const { authorization, ...headers } = req.headers
+    
+    this.logger.info('incoming request', { req: { method: req.method, url: req.baseUrl, query: req.query, params: req.params, headers: headers } })
 
     res.on('finish', () => {
       this.logger.info('request completed', { res: { statusCode: res.statusCode } })

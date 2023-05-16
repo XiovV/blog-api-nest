@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException, HttpException, HttpStatus, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Version, UseGuards, ValidationPipe, Request, HttpVersionNotSupportedException, UnauthorizedException, NotFoundException, HttpException, HttpStatus, Query, DefaultValuePipe, ParseIntPipe, Inject } from '@nestjs/common';
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -12,11 +12,16 @@ import { Casbin } from 'src/casbin/casbin';
 import { RBACObject } from 'src/casbin/enum/object.enum';
 import { RBACAction } from 'src/casbin/enum/action.enum';
 import { InsufficientPermissionsException } from 'src/errors/insufficient-permissions.exception';
+import { Logger } from 'winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @ApiTags('posts')
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService, private casbin: Casbin) { }
+  private readonly logger: Logger
+  constructor(private readonly postsService: PostsService, private casbin: Casbin, @Inject(WINSTON_MODULE_PROVIDER) private readonly winston: Logger) {
+    this.logger = this.winston.child({context: PostsController.name})
+  }
 
   @ApiOperation({ summary: "Creates a new post." })
   @ApiCreatedResponse({ description: "Post has been created successfully", type: BasePost })
@@ -27,6 +32,7 @@ export class PostsController {
   @Post()
   create(@Body(new ValidationPipe()) createPostDto: CreatePostDto, @Request() req) {
     const user: User = req.user;
+    this.logger.info('attempting to create a new post', {username: user.username})
 
     return this.postsService.create(user, createPostDto);
   }
@@ -39,9 +45,14 @@ export class PostsController {
   @Version('1')
   @UseGuards(JwtGuard)
   @Get(':id')
-  async findOne(@Param('id') id: number) {
+  async findOne(@Param('id') id: number, @Request() req) {
+    const user: User = req.user
+    const childLogger = this.logger.child({username: user.username, postId: id})
+
+    childLogger.info('fetching a post by id')
     const post = await this.postsService.findOne(id);
     if (!post) {
+      this.logger.warn('could not fetch post by post id', {error: 'post not found'})
       throw new NotFoundException()
     }
 
@@ -61,8 +72,12 @@ export class PostsController {
   @Version('1')
   @UseGuards(JwtGuard)
   @Get('user/:username')
-  async getUsersPosts(@Param('username') username: string, @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1, @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10) {
+  async getUsersPosts(@Param('username') username: string, @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1, @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10, @Request() req) {
+    const user: User = req.user
+
     limit = limit > 100 ? 100 : limit
+
+    this.logger.log('fetching post by username', {username: user.username, postUsername: username})
     return await this.postsService.getUsersPosts(username, { page, limit })
   }
 
@@ -75,6 +90,8 @@ export class PostsController {
   @Patch(':id')
   async update(@Param('id') id: number, @Body() updatePostDto: UpdatePostDto, @Request() req) {
     const user: User = req.user;
+
+    this.logger.info('updating a post by id', {username: user.username, postToUpdateId: id})
     return await this.postsService.update(user, id, updatePostDto);
   }
 
@@ -89,17 +106,22 @@ export class PostsController {
   @Delete(':id')
   async remove(@Param('id') id: number, @Request() req) {
     const user: User = req.user;
+    const childLogger = this.logger.child({username: user.username, postToDeleteId: id})
 
+    childLogger.info('attempting to delete a post by id')
     const post: PostEntity = await this.postsService.findOne(id);
     if (!post) {
+      childLogger.warn('failed to delete a post by id', {error: 'post not found'})
       throw new NotFoundException()
     }
 
+    childLogger.info('checking permissions')
     const canDelete = await this.casbin.enforce(user.role.name, RBACObject.Post, RBACAction.Delete)
     if (post.user.id !== user.id && !canDelete) {
+      childLogger.warn('failed to delete a post by id', {error: 'user has insufficient permissions'})
       throw new InsufficientPermissionsException()
     }
-
+    
     return await this.postsService.remove(id);
   }
 }

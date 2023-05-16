@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './users/entities/user.entity';
@@ -11,7 +11,9 @@ import { PasswordResetToken } from './users/entities/password-reset-token.entity
 import { PostsModule } from './posts/posts.module';
 import { Post } from './posts/entities/post.entity';
 import { Role } from './users/entities/role.entity';
-import { LoggerModule } from 'nestjs-pino';
+import { WinstonModule } from 'nest-winston';
+import * as winston from 'winston'
+import { LoggerMiddleware } from './logger/logger.middleware';
 
 @Module({
   imports: [ConfigModule.forRoot({ isGlobal: true }),
@@ -29,31 +31,21 @@ import { LoggerModule } from 'nestjs-pino';
       synchronize: true,
     }),
   }),
-  LoggerModule.forRootAsync({
+  WinstonModule.forRootAsync({
     imports: [ConfigModule],
     inject: [ConfigService],
-    useFactory: async (config: ConfigService) => {
-      return {
-        pinoHttp: {
-          serializers: {
-            req: (req) => ({
-              id: req.id,
-              method: req.method,
-              url: req.url
-            })
-          },
-          level: config.get('LOG_LEVEL') || 'info',
-          transport: config.get('NODE_ENV') !== 'production' ? { target: 'pino-pretty' } : undefined,
-          formatters: {
-            level(level) {
-              return { level }
-            },
-          }
-        }
-        
-      }
-    }
-  }), UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],
+    useFactory: (config: ConfigService) => ({
+      level: config.get('LOG_LEVEL') || 'info',
+      transports: [
+        new winston.transports.Console({ format: config.get('NODE_ENV') === 'production' ? winston.format.json() : winston.format.simple() })
+      ]
+    }),
+  }),
+    UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],
   providers: [],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}

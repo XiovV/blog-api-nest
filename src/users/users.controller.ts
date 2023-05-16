@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param, Logger } from '@nestjs/common';
+import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param, Inject } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthService } from 'src/auth/auth.service';
@@ -22,8 +22,7 @@ import { InsufficientPermissionsException } from 'src/errors/insufficient-permis
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  private readonly logger = new Logger(UsersController.name)
-  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService, private casbin: Casbin) { }
+  constructor(private readonly usersService: UsersService, private authService: AuthService, private cryptoService: CryptoService, private mailerService: MailerService, private casbin: Casbin) {}
 
   @ApiOperation({ summary: "Registers a user into the system.", description: "Inserts a user into the database if the username or email haven't already been taken." })
   @ApiCreatedResponse({ description: 'User has been successfully created', type: TokenPair })
@@ -31,7 +30,6 @@ export class UsersController {
   @Version('1')
   @Post('register')
   async create(@Body(new ValidationPipe()) createUserDto: CreateUserDto) {
-    this.logger.log({username: createUserDto.username, email: createUserDto.email}, 'attempting to create a new user')
     const createdUser = await this.usersService.create(createUserDto);
 
     return await this.authService.generateTokenPair(createdUser);
@@ -47,7 +45,6 @@ export class UsersController {
   @Version('1')
   @Post('login')
   async login(@Body(new ValidationPipe()) loginUserDto: LoginUserDto) {
-    this.logger.log({username: loginUserDto.username}, 'attempting to log a user in')
     return this.authService.login(loginUserDto.username, loginUserDto.password, loginUserDto.totp);
   }
 

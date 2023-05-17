@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param, Inject } from '@nestjs/common';
+import { Controller, Get, Post, Body, Version, ValidationPipe, Request, HttpStatus, UseGuards, Req, HttpException, UnauthorizedException, HttpCode, Put, Query, Delete, Param, Inject, InternalServerErrorException } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AuthService } from 'src/auth/auth.service';
@@ -168,7 +168,17 @@ export class UsersController {
     await this.usersService.insertPasswordResetToken(user, passwordResetToken)
 
     childLogger.info('attempting to send a password reset email')
-    this.mailerService.sendPasswordResetMail(user.email, user.username, passwordResetToken);
+    await this.mailerService.sendPasswordResetMail(user.email, user.username, passwordResetToken).catch((error) => {
+      error.responseCode = 123
+      switch (error.responseCode) {
+        case 535:
+          childLogger.error('failed to send password reset email', error)
+          break;
+        default:
+          childLogger.error('unknown error while sending a password reset email', error)
+      }
+      throw new InternalServerErrorException()
+    })
   }
 
   @ApiOperation({ summary: "Changes the user's password." })

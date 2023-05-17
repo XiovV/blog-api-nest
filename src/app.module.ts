@@ -38,7 +38,7 @@ import { LoggerMiddleware } from './logger/logger.middleware';
       level: config.get('LOG_LEVEL') || 'info',
       transports: [
         new winston.transports.Console({ format: config.get('NODE_ENV') === 'production' ? winston.format.json() : winston.format.simple() })
-      ]
+      ],
     }),
   }),
     UsersModule, AuthModule, CryptoModule, MailerModule, PostsModule],

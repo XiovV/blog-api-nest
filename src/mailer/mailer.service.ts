@@ -14,7 +14,7 @@ export class MailerService {
                 user: config.get('SMTP_USERNAME'),
                 pass: config.get('SMTP_PASSWORD'),
             }
-        }) 
+        })
     }
 
     async sendPasswordResetMail(receiverEmail: string, username: string, token: string) {
@@ -26,4 +26,3 @@ export class MailerService {
         })
     }
 }
-

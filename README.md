@@ -14,7 +14,7 @@ This API has the following features:
 # Deployment using Docker
 First, clone the repository:
 ```shell
-git clone git@github.com:XiovV/blog-api-nest.git
+git clone https://github.com/XiovV/blog-api-nest.git
 ```
 Then build the image like this:
 ```shell

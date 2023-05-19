@@ -33,3 +33,6 @@ All of the environment variables inside the docker-compose.yml file are required
 - `PORT` (defaults to 3000)
 - `LOG_LEVEL` (defaults to "info")
 - `NODE_ENV` (if set to "production", the logs will be logged in JSON. If it's set to something else, logs will be prettified)
+
+# Documentation
+Once the API is up and running, you can visit the docs at http://localhost:3000/docs

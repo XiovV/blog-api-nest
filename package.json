@@ -95,11 +95,11 @@
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/src/",
-      "<rootDir>/libs/"
+      "<rootDir>/src/"
     ],
     "moduleNameMapper": {
-      "^@app/testlibrary(|/.*)$": "<rootDir>/libs/testlibrary/src/$1"
+      "^@app/testlibrary(|/.*)$": "<rootDir>/libs/testlibrary/src/$1",
+      "^src/(.*)$": "<rootDir>/src/$1"
     }
   }
 }

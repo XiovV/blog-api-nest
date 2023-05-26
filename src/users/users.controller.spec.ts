@@ -18,6 +18,7 @@ import { MockPostsRepository, MockUsersRepository } from 'src/mocks/repository.m
 import { MockWinston } from 'src/mocks/winston.mock';
 
 jest.mock('./users.service')
+jest.mock('../auth/auth.service')
 
 describe('UsersController', () => {
   let controller: UsersController;
